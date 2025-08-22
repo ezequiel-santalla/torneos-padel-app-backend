@@ -1,5 +1,5 @@
 # Etapa de construcción
-FROM eclipse-temurin:17-jdk-alpine AS build
+FROM eclipse-temurin:21-jdk-alpine AS build
 
 # Establecer directorio de trabajo
 WORKDIR /app
@@ -18,11 +18,11 @@ RUN ./mvnw dependency:go-offline
 # Copiar el código fuente
 COPY src ./src
 
-# Construir la aplicación sin tests
-RUN ./mvnw clean package -DskipTests
+# Construir la aplicación sin tests con encoding UTF-8
+RUN ./mvnw clean package -DskipTests -Dproject.build.sourceEncoding=UTF-8 -Dproject.reporting.outputEncoding=UTF-8
 
 # Etapa de producción
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 
 # Establecer directorio de trabajo
 WORKDIR /app
