@@ -1,27 +1,44 @@
-# Usar OpenJDK 17 como imagen base (puedes cambiar la versión según tu proyecto)
-FROM openjdk:17-jdk-slim AS build
+# Etapa de construcción
+FROM eclipse-temurin:17-jdk-alpine AS build
 
 # Establecer directorio de trabajo
 WORKDIR /app
 
-# Copiar el archivo JAR de tu aplicación
-# Ajusta el nombre del archivo según tu proyecto
-COPY . .
+# Copiar solo los archivos necesarios para mejor cache de Docker
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
 
-# No test
+# Dar permisos de ejecución al wrapper de Maven
+RUN chmod +x ./mvnw
+
+# Descargar dependencias (se cachea si pom.xml no cambia)
+RUN ./mvnw dependency:go-offline
+
+# Copiar el código fuente
+COPY src ./src
+
+# Construir la aplicación sin tests
 RUN ./mvnw clean package -DskipTests
 
 # Etapa de producción
-FROM openjdk:17-jre-slim
+FROM eclipse-temurin:17-jre-alpine
 
 # Establecer directorio de trabajo
 WORKDIR /app
 
-# Copiar el archivo JAR desde la etapa de construcción
+# Copiar el JAR desde la etapa de construcción
 COPY --from=build /app/target/*.jar app.jar
 
-# Exponer el puerto en el que tu aplicación escucha
+# Variables de entorno para optimizar JVM en contenedores
+ENV JAVA_OPTS="-Xmx512m -Xms256m -XX:+UseContainerSupport -XX:MaxRAMPercentage=80"
+
+# Crear usuario no-root para seguridad
+RUN addgroup --system spring && adduser --system spring --ingroup spring
+USER spring:spring
+
+# Exponer el puerto
 EXPOSE 8080
 
 # Comando para ejecutar la aplicación
-CMD ["sh", "-c", "java -Dserver.port=${PORT:-8080} -jar app.jar"]
+CMD ["sh", "-c", "java $JAVA_OPTS -Dserver.port=${PORT:-8080} -jar app.jar"]
