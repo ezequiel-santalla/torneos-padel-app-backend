@@ -1,5 +1,6 @@
 package com.eze_dev.torneos.service.implementations;
 
+import com.eze_dev.torneos.dto.request.update.PlayerUpdateDto;
 import com.eze_dev.torneos.dto.response.PaginatedResponseDto;
 import com.eze_dev.torneos.dto.response.PlayerResponseDto;
 import com.eze_dev.torneos.mapper.PlayerMapper;
@@ -34,6 +35,17 @@ public class PlayerService implements IPlayerService {
     public PlayerResponseDto getById(UUID id) {
         return playerRepository.findById(id)
                 .map(playerMapper::toDto)
+                .orElseThrow(() -> new EntityNotFoundException("Player not found with ID: " + id));
+    }
+
+    @Override
+    public PlayerResponseDto update(UUID id, PlayerUpdateDto playerUpdateDto) {
+        return playerRepository.findById(id)
+                .map(existingPlayer -> {
+                    playerMapper.updateEntityFromDto(playerUpdateDto, existingPlayer);
+
+                    return playerMapper.toDto(playerRepository.save(existingPlayer));
+                })
                 .orElseThrow(() -> new EntityNotFoundException("Player not found with ID: " + id));
     }
 

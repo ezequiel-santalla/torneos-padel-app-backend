@@ -9,10 +9,12 @@ import org.springframework.stereotype.Component;
 public class TournamentStrategyFactory {
 
     private final QuadrangularStrategy quadrangularStrategy;
+    private final HexagonalStrategy hexagonalStrategy;
 
     public TournamentStrategy getStrategy(TournamentType type) {
         return switch (type) {
             case QUADRANGULAR -> quadrangularStrategy;
+            case HEXAGONAL -> hexagonalStrategy;
             case KNOCKOUT, ROUND_ROBIN -> throw new UnsupportedOperationException("Strategy not implemented yet for type: " + type);
         };
     }

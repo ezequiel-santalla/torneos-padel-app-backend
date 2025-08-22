@@ -1,15 +1,5 @@
 package com.eze_dev.torneos.dto.request.update;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class PermissionUpdateDto {
-
-    private String name;
-}
+public record PermissionUpdateDto(
+        String name
+) {}

@@ -7,6 +7,7 @@ import com.eze_dev.torneos.service.interfaces.IPermissionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,27 +20,32 @@ public class PermissionController {
     private final IPermissionService permissionService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PermissionResponseDto> createPermission(@Valid @RequestBody PermissionCreateDto permissionCreateDto) {
         return ResponseEntity.ok(permissionService.create(permissionCreateDto));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<PermissionResponseDto>> getAllPermissions() {
         return ResponseEntity.ok(permissionService.getAll());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PermissionResponseDto> getPermissionById(@PathVariable Long id) {
         return ResponseEntity.ok(permissionService.getById(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PermissionResponseDto> updatePermission(@PathVariable Long id, @Valid @RequestBody PermissionUpdateDto permissionUpdateDto) {
         return ResponseEntity.ok(permissionService.update(id, permissionUpdateDto));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePlayer(@PathVariable Long id) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deletePermission(@PathVariable Long id) {
         permissionService.delete(id);
 
         return ResponseEntity.noContent().build();

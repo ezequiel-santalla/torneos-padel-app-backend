@@ -1,21 +1,9 @@
 package com.eze_dev.torneos.dto.request.update;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.util.UUID;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class PairUpdateDto {
-
-    private UUID player1Id;
-    private UUID player2Id;
-    private String teamName;
-}
+public record PairUpdateDto(
+        UUID player1Id,
+        UUID player2Id,
+        String teamName
+) {}

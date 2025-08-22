@@ -22,8 +22,8 @@ public class PermissionService implements IPermissionService {
 
     @Override
     public PermissionResponseDto create(PermissionCreateDto permissionCreateDto) {
-        if (permissionRepository.existsByName(permissionCreateDto.getName())) {
-            throw new EntityExistsException("Permission with name " + permissionCreateDto.getName() + " already exists.");
+        if (permissionRepository.existsByName(permissionCreateDto.name())) {
+            throw new EntityExistsException("Permission with name " + permissionCreateDto.name() + " already exists.");
         }
 
         return permissionMapper.toDto(permissionRepository.save(permissionMapper.toEntity(permissionCreateDto)));

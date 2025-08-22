@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -20,10 +21,26 @@ public interface PlayerRepository extends JpaRepository<Player, UUID> {
     WHERE EXISTS (
         SELECT 1 FROM Tournament t
         JOIN t.pairs pair
-        WHERE (:category IS NULL OR t.categoryType = :category)
-        AND (:gender IS NULL OR t.genderType = :gender)
+        WHERE t.categoryType = :category
+        AND t.genderType = :gender
         AND (pair.player1.id = p.id OR pair.player2.id = p.id)
     )
+    """)
+    List<Player> findPlayersWhoPlayedInCategoryAndGender(
+            @Param("category") CategoryType category,
+            @Param("gender") GenderType gender
+    );
+
+    @Query("""
+    SELECT DISTINCT p FROM Player p
+    WHERE EXISTS (
+        SELECT 1 FROM Tournament t
+        JOIN t.pairs pair
+        WHERE t.categoryType = :category
+        AND t.genderType = :gender
+        AND (pair.player1.id = p.id OR pair.player2.id = p.id)
+    )
+    ORDER BY p.lastName, p.name
     """)
     Page<Player> findPlayersWhoPlayedInCategoryAndGender(
             @Param("category") CategoryType category,

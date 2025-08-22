@@ -76,17 +76,17 @@ public class PlayerStandingService implements IPlayerStandingService {
 
         PlayerSummaryResponseDto playerSummary = playerSummaryMapper.toDto(player);
 
-        return PlayerStandingResponseDto.builder()
-                .playerSummary(playerSummary)
-                .totalMatchesPlayed(totalMatchesPlayed)
-                .totalMatchesWon(totalMatchesWon)
-                .totalMatchesLost(totalMatchesLost)
-                .matchesEfficiency(matchesEfficiency)
-                .totalGamesPlayed(totalGamesPlayed)
-                .totalGamesWon(totalGamesWon)
-                .totalGamesLost(totalGamesLost)
-                .gamesEfficiency(gamesEfficiency)
-                .build();
+        return new PlayerStandingResponseDto(
+                playerSummary,
+                totalMatchesPlayed,
+                totalMatchesWon,
+                totalMatchesLost,
+                matchesEfficiency,
+                totalGamesPlayed,
+                totalGamesWon,
+                totalGamesLost,
+                gamesEfficiency
+        );
     }
 
     @Override
@@ -97,12 +97,12 @@ public class PlayerStandingService implements IPlayerStandingService {
                 .map(player -> getPlayerStandingById(player.getId()))
                 .sorted((s1, s2) -> {
                     // Ordenar por eficiencia de partidos descendente
-                    int efficiencyCompare = Double.compare(s2.getMatchesEfficiency(), s1.getMatchesEfficiency());
+                    int efficiencyCompare = Double.compare(s2.matchesEfficiency(), s1.matchesEfficiency());
 
                     if (efficiencyCompare != 0) return efficiencyCompare;
 
                     // En caso de empate, ordenar por partidos ganados
-                    return Integer.compare(s2.getTotalMatchesWon(), s1.getTotalMatchesWon());
+                    return Integer.compare(s2.totalMatchesWon(), s1.totalMatchesWon());
                 })
                 .toList();
     }

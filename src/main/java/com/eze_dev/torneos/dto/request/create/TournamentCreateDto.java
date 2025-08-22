@@ -6,41 +6,16 @@ import com.eze_dev.torneos.types.TournamentType;
 import com.eze_dev.torneos.types.WinningMatchRuleType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class TournamentCreateDto {
-
-    @NotBlank(message = "Name is required")
-    private String name;
-
-    @NotNull(message = "Start date is required")
-    private LocalDateTime startDate;
-
-    @NotNull(message = "End date is required")
-    private LocalDateTime endDate;
-
-    @NotBlank(message = "Address is required")
-    private String address;
-
-    @NotNull(message = "Winning match rule is required")
-    private WinningMatchRuleType winningMatchRule;
-
-    @NotNull(message = "Tournament type is required")
-    private TournamentType tournamentType;
-
-    @NotNull(message = "Category is required")
-    private CategoryType categoryType;
-
-    @NotNull(message = "Gender is required")
-    private GenderType genderType;
-}
-
+public record TournamentCreateDto(
+        @NotBlank(message = "Name is required") String name,
+        @NotNull(message = "Start date is required") LocalDateTime startDate,
+        @NotNull(message = "End date is required") LocalDateTime endDate,
+        @NotBlank(message = "Address is required") String address,
+        @NotNull(message = "Winning match rule is required") WinningMatchRuleType winningMatchRule,
+        @NotNull(message = "Tournament type is required") TournamentType tournamentType,
+        @NotNull(message = "Category is required") CategoryType categoryType,
+        @NotNull(message = "Gender is required") GenderType genderType
+) {}

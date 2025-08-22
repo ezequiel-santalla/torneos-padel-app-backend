@@ -23,6 +23,7 @@ import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -31,11 +32,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TournamentService implements ITournamentService {
 
-    // Constantes para evitar duplicación de literales
     private static final String TOURNAMENT_NOT_FOUND_MSG = "Tournament not found with ID: ";
     private static final String PAIR_NOT_FOUND_MSG = "Pair not found with ID: ";
     private static final String TOURNAMENT_NAME_EXISTS_MSG = "Tournament with name %s already exists.";
@@ -55,8 +56,8 @@ public class TournamentService implements ITournamentService {
 
     @Override
     public TournamentResponseDto create(TournamentCreateDto tournamentCreateDto) {
-        if (tournamentRepository.existsByName(tournamentCreateDto.getName())) {
-            throw new EntityExistsException(String.format(TOURNAMENT_NAME_EXISTS_MSG, tournamentCreateDto.getName()));
+        if (tournamentRepository.existsByName(tournamentCreateDto.name())) {
+            throw new EntityExistsException(String.format(TOURNAMENT_NAME_EXISTS_MSG, tournamentCreateDto.name()));
         }
 
         Tournament tournament = tournamentMapper.toEntity(tournamentCreateDto);
@@ -175,7 +176,6 @@ public class TournamentService implements ITournamentService {
 
         tournament.setStatus(newStatus);
 
-        // Solo establecer fecha de finalización automáticamente si no existe una fecha manual
         if (newStatus == TournamentStatus.FINISHED && tournament.getEndDate() == null) {
             tournament.setEndDate(LocalDateTime.now());
         }
@@ -192,18 +192,18 @@ public class TournamentService implements ITournamentService {
 
     @Override
     @Transactional
-    public TournamentResponseDto tryFinalizeTournamentIfCompleted(UUID tournamentId) {
+    public void tryFinalizeTournamentIfCompleted(UUID tournamentId) {
         Tournament tournament = getTournamentOrThrow(tournamentId);
 
         if (tournament.getStatus() == TournamentStatus.FINISHED) {
-            return tournamentMapper.toDto(tournament);
+            return;
         }
 
         boolean allMatchesCompleted = tournament.getMatches().stream()
                 .allMatch(match -> match.getStatus() == MatchStatus.COMPLETED);
 
         if (!allMatchesCompleted) {
-            return tournamentMapper.toDto(tournament);
+            return;
         }
 
         tournament.setStatus(TournamentStatus.FINISHED);
@@ -212,7 +212,9 @@ public class TournamentService implements ITournamentService {
             tournament.setEndDate(LocalDateTime.now());
         }
 
-        return tournamentMapper.toDto(tournamentRepository.save(tournament));
+        tournamentRepository.save(tournament);
+
+        log.info("Tournament {} has been automatically finalized", tournamentId);
     }
 
     @Override
@@ -271,9 +273,26 @@ public class TournamentService implements ITournamentService {
         return new PaginatedResponseDto<>(tournaments, tournamentsPage);
     }
 
+    @Override
+    @Transactional
+    public List<Match> processMatchCompletionAndAdvance(UUID tournamentId) {
+        Tournament tournament = getTournamentOrThrow(tournamentId);
+        TournamentStrategy strategy = tournamentStrategyFactory.getStrategy(tournament.getTournamentType());
+
+        List<Match> newMatches = strategy.processMatchCompletionAndAdvance(tournament);
+
+        if (!newMatches.isEmpty()) {
+            tournament.getMatches().addAll(newMatches);
+            tournamentRepository.save(tournament);
+            log.info("Added {} new matches to tournament {}", newMatches.size(), tournamentId);
+        }
+
+        return newMatches;
+    }
+
     private TournamentStatus getTournamentStatus(TournamentStatusUpdateDto tournamentStatusUpdateDto, Tournament tournament) {
         TournamentStatus currentStatus = tournament.getStatus();
-        TournamentStatus newStatus = tournamentStatusUpdateDto.getStatus();
+        TournamentStatus newStatus = tournamentStatusUpdateDto.status();
 
         if (currentStatus == TournamentStatus.FINISHED) {
             throw new IllegalStateException(FINISHED_TOURNAMENT_UPDATE_MSG);

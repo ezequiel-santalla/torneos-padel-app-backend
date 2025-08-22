@@ -6,6 +6,7 @@ import com.eze_dev.torneos.service.interfaces.IMatchService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -18,6 +19,7 @@ public class MatchController {
     private final IMatchService matchService;
 
     @PutMapping("/{id}/result")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MatchResponseDto> updateMatchResult(@PathVariable UUID tournamentId, @PathVariable UUID id, @Valid @RequestBody MatchResultUpdateDto matchResultUpdateDto) {
         return ResponseEntity.ok(matchService.updateMatchResult(tournamentId, id, matchResultUpdateDto));
     }

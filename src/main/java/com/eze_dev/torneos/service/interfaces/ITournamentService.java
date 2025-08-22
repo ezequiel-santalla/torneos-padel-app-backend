@@ -4,6 +4,7 @@ import com.eze_dev.torneos.dto.request.create.TournamentCreateDto;
 import com.eze_dev.torneos.dto.response.*;
 import com.eze_dev.torneos.dto.request.update.TournamentStatusUpdateDto;
 import com.eze_dev.torneos.dto.request.update.TournamentUpdateDto;
+import com.eze_dev.torneos.model.Match;
 import com.eze_dev.torneos.types.TournamentStatus;
 import org.springframework.data.domain.Pageable;
 
@@ -27,7 +28,7 @@ public interface ITournamentService {
 
     List<MatchResponseDto> getMatchesInTournament(UUID tournamentId);
 
-    TournamentResponseDto tryFinalizeTournamentIfCompleted(UUID tournamentId);
+    void tryFinalizeTournamentIfCompleted(UUID tournamentId);
     List<PairStandingResponseDto> getStandings(UUID tournamentId);
 
     TournamentProgressResponseDto getProgress(UUID tournamentId);
@@ -36,4 +37,6 @@ public interface ITournamentService {
     TournamentStatus getStatus(UUID tournamentId);
 
     PaginatedResponseDto<TournamentResponseDto> getAllPaginated(Pageable pageable);
+
+    List<Match> processMatchCompletionAndAdvance(UUID tournamentId);
 }

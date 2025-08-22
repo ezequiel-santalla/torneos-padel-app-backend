@@ -29,13 +29,13 @@ public class RoleService implements IRoleService {
     @Override
     @Transactional
     public RoleResponseDto create(RoleCreateDto roleCreateDto) {
-        if (roleRepository.existsByName(roleCreateDto.getName())) {
-            throw new IllegalArgumentException("Role with name " + roleCreateDto.getName() + " already exists.");
+        if (roleRepository.existsByName(roleCreateDto.name())) {
+            throw new IllegalArgumentException("Role with name " + roleCreateDto.name() + " already exists.");
         }
 
         Role role = roleMapper.toEntity(roleCreateDto);
 
-        Set<Permission> permissions = getPermissionsByIds(roleCreateDto.getPermissionIds());
+        Set<Permission> permissions = getPermissionsByIds(roleCreateDto.permissionIds());
         role.setPermissions(permissions);
 
         return roleMapper.toDto(roleRepository.save(role));

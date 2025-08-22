@@ -5,40 +5,31 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class UserCreateDto {
+public record UserCreateDto(
+        @Email(message = "Email must be valid")
+        @NotBlank(message = "Email is required")
+        String email,
 
-    @Email(message = "Email must be valid")
-    @NotBlank(message = "Email is required")
-    private String email;
+        @NotBlank(message = "Password is required")
+        String password,
 
-    @NotBlank(message = "Password is required")
-    private String password;
+        @NotBlank(message = "Confirm password is required")
+        String confirmPassword,
 
-    @NotBlank(message = "Confirm password is required")
-    private String confirmPassword;
+        @NotBlank(message = "Name is required")
+        String name,
 
-    @NotBlank(message = "Name is required")
-    private String name;
+        @NotBlank(message = "Last name is required")
+        String lastName,
 
-    @NotBlank(message = "Last name is required")
-    private String lastName;
+        @NotNull(message = "Gender is required")
+        GenderType genderType,
 
-    @NotNull(message = "Gender is required")
-    private GenderType genderType;
+        @NotBlank(message = "DNI is required")
+        @Pattern(regexp = "\\d{8}", message = "DNI must have 8 digits")
+        String dni,
 
-    @NotBlank(message = "DNI is required")
-    @Pattern(regexp = "\\d{8}", message = "DNI must have 8 digits")
-    private String dni;
-
-    @NotBlank(message = "Phone number is required")
-    private String phoneNumber;
-}
+        @NotBlank(message = "Phone number is required")
+        String phoneNumber
+) {}

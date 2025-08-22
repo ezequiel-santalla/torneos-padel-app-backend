@@ -39,28 +39,28 @@ public class UserService implements IUserService {
     @Override
     @Transactional
     public UserResponseDto register(UserCreateDto userCreateDto) {
-        log.info("Attempting to register user with email: {}", userCreateDto.getEmail());
+        log.info("Attempting to register user with email: {}", userCreateDto.email());
 
-        if (userRepository.existsByEmail(userCreateDto.getEmail())) {
-            log.warn("Registration failed - Email already exists: {}", userCreateDto.getEmail());
+        if (userRepository.existsByEmail(userCreateDto.email())) {
+            log.warn("Registration failed - Email already exists: {}", userCreateDto.email());
 
-            throw new EntityExistsException("User with email " + userCreateDto.getEmail() + " already exists");
+            throw new EntityExistsException("User with email " + userCreateDto.email() + " already exists");
         }
 
-        if (playerRepository.existsByDni(userCreateDto.getDni())) {
-            log.warn("Registration failed - DNI already exists: {}", userCreateDto.getDni());
-            throw new EntityExistsException("Player with DNI " + userCreateDto.getDni() + " already exists");
+        if (playerRepository.existsByDni(userCreateDto.dni())) {
+            log.warn("Registration failed - DNI already exists: {}", userCreateDto.dni());
+            throw new EntityExistsException("Player with DNI " + userCreateDto.dni() + " already exists");
         }
 
-        if (!userCreateDto.getPassword().equals(userCreateDto.getConfirmPassword())) {
-            log.warn("Registration failed - Passwords do not match for email: {}", userCreateDto.getEmail());
+        if (!userCreateDto.password().equals(userCreateDto.confirmPassword())) {
+            log.warn("Registration failed - Passwords do not match for email: {}", userCreateDto.email());
             throw new IllegalArgumentException("Passwords do not match");
         }
 
         Player player = playerMapper.toEntityFromRegistration(userCreateDto);
 
         UserEntity user = userMapper.toEntity(userCreateDto);
-        user.setPassword(passwordEncoder.encode(userCreateDto.getPassword()));
+        user.setPassword(passwordEncoder.encode(userCreateDto.password()));
 
         Role userRole = roleRepository.findByName("USER")
                 .orElseThrow(() -> new RuntimeException("Role USER not found"));
@@ -106,10 +106,15 @@ public class UserService implements IUserService {
                 .map(existingUser -> {
                     userMapper.updateEntityFromDto(userUpdateDto, existingUser);
 
+                    if (userUpdateDto.player() != null && existingUser.getPlayer() != null) {
+                        playerMapper.updateEntityFromDto(userUpdateDto.player(), existingUser.getPlayer());
+                    }
+
                     return userMapper.toDto(userRepository.save(existingUser));
                 })
                 .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + id));
     }
+
 
     @Override
     public void delete(UUID id) {

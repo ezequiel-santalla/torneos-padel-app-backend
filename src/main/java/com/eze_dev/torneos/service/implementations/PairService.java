@@ -28,18 +28,18 @@ public class PairService implements IPairService {
 
     @Override
     public PairResponseDto create(PairCreateDto pairCreateDto) {
-        if (pairRepository.findByTeamName(pairCreateDto.getTeamName()).isPresent()) {
+        if (pairRepository.findByTeamName(pairCreateDto.teamName()).isPresent()) {
             throw new EntityExistsException("Team name already exists.");
         }
 
-        validateDifferentPlayers(pairCreateDto.getPlayer1Id(), pairCreateDto.getPlayer2Id());
-        validatePairDoesNotExist(pairCreateDto.getPlayer1Id(), pairCreateDto.getPlayer2Id());
+        validateDifferentPlayers(pairCreateDto.player1Id(), pairCreateDto.player2Id());
+        validatePairDoesNotExist(pairCreateDto.player1Id(), pairCreateDto.player2Id());
 
-        Player player1 = getPlayerOrThrow(pairCreateDto.getPlayer1Id(), "Player 1 not found");
-        Player player2 = getPlayerOrThrow(pairCreateDto.getPlayer2Id(), "Player 2 not found");
+        Player player1 = getPlayerOrThrow(pairCreateDto.player1Id(), "Player 1 not found");
+        Player player2 = getPlayerOrThrow(pairCreateDto.player2Id(), "Player 2 not found");
 
         Pair pair = Pair.builder()
-                .teamName(pairCreateDto.getTeamName())
+                .teamName(pairCreateDto.teamName())
                 .player1(player1)
                 .player2(player2)
                 .build();
@@ -68,14 +68,14 @@ public class PairService implements IPairService {
         Pair pair = pairRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Pair not found with ID: " + id));
 
-        validateDifferentPlayers(pairUpdateDto.getPlayer1Id(), pairUpdateDto.getPlayer2Id());
+        validateDifferentPlayers(pairUpdateDto.player1Id(), pairUpdateDto.player2Id());
 
-        Player player1 = getPlayerOrThrow(pairUpdateDto.getPlayer1Id(), "Player 1 not found");
-        Player player2 = getPlayerOrThrow(pairUpdateDto.getPlayer2Id(), "Player 2 not found");
+        Player player1 = getPlayerOrThrow(pairUpdateDto.player1Id(), "Player 1 not found");
+        Player player2 = getPlayerOrThrow(pairUpdateDto.player2Id(), "Player 2 not found");
 
         pair.setPlayer1(player1);
         pair.setPlayer2(player2);
-        pair.setTeamName(pairUpdateDto.getTeamName());
+        pair.setTeamName(pairUpdateDto.teamName());
 
         return pairMapper.toDto(pairRepository.save(pair));
     }

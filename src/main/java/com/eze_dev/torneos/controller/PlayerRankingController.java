@@ -2,7 +2,6 @@ package com.eze_dev.torneos.controller;
 
 import com.eze_dev.torneos.dto.response.PlayerRankingResponseDto;
 import com.eze_dev.torneos.service.interfaces.IPlayerRankingService;
-import com.eze_dev.torneos.service.interfaces.IPlayerStandingService;
 import com.eze_dev.torneos.types.CategoryType;
 import com.eze_dev.torneos.types.GenderType;
 import lombok.RequiredArgsConstructor;

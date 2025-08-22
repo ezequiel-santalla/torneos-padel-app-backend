@@ -7,6 +7,7 @@ import com.eze_dev.torneos.service.interfaces.IPairService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class PairController {
     private final IPairService pairService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PairResponseDto> createPair(@Valid @RequestBody PairCreateDto pairCreateDto) {
         return ResponseEntity.ok(pairService.create(pairCreateDto));
     }
@@ -36,11 +38,13 @@ public class PairController {
     }
 
     @PutMapping("/{id}")
+
     public ResponseEntity<PairResponseDto> updatePair(@PathVariable UUID id, @RequestBody @Valid PairUpdateDto dto) {
         return ResponseEntity.ok(pairService.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deletePair(@PathVariable UUID id) {
         pairService.delete(id);
 

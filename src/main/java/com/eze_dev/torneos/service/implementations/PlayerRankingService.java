@@ -18,9 +18,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,38 +31,31 @@ public class PlayerRankingService implements IPlayerRankingService {
 
     @Override
     public List<PlayerRankingResponseDto> getPlayerRankings(CategoryType category, GenderType gender) {
-        List<Player> allPlayers = playerRepository.findAll();
+        List<Player> playersInCategory = playerRepository.findPlayersWhoPlayedInCategoryAndGender(category, gender);
 
-        return allPlayers.stream()
-                .filter(player -> hasPlayedInCategoryAndGender(player.getId(), category, gender))
+        List<PlayerRankingResponseDto> rankings = playersInCategory.stream()
                 .map(player -> getPlayerPointsRanking(player.getId(), category, gender))
-                .sorted((p1, p2) -> Integer.compare(p2.getTotalPoints(), p1.getTotalPoints()))
+                .sorted(Comparator.comparingInt(PlayerRankingResponseDto::totalPoints).reversed())
                 .toList();
+
+        return assignPositions(rankings);
     }
 
     @Override
     public PaginatedResponseDto<PlayerRankingResponseDto> getPlayerRankingsPaginated(CategoryType category, GenderType gender, Pageable pageable) {
         Page<Player> rankingsPage = playerRepository.findPlayersWhoPlayedInCategoryAndGender(category, gender, pageable);
 
-        List<PlayerRankingResponseDto> rankings = rankingsPage.getContent()
+        List<PlayerRankingResponseDto> pageRankings = rankingsPage.getContent()
                 .stream()
-                .map(ranking -> getPlayerPointsRanking(ranking.getId(), category, gender))
-                .sorted((p1, p2) -> Integer.compare(p2.getTotalPoints(), p1.getTotalPoints()))
+                .map(player -> getPlayerPointsRanking(player.getId(), category, gender))
+                .sorted(Comparator.comparingInt(PlayerRankingResponseDto::totalPoints).reversed())
                 .toList();
 
-        return new PaginatedResponseDto<>(rankings, rankingsPage);
+        List<PlayerRankingResponseDto> rankingsWithPositions = assignPositionsForPagination(
+                pageRankings, category, gender);
+
+        return new PaginatedResponseDto<>(rankingsWithPositions, rankingsPage);
     }
-
-    private boolean hasPlayedInCategoryAndGender(UUID playerId, CategoryType category, GenderType gender) {
-        List<Tournament> playerTournaments = tournamentRepository.findTournamentsByPlayerId(playerId);
-
-        return playerTournaments.stream()
-                .anyMatch(tournament ->
-                        (category == null || tournament.getCategoryType().equals(category)) &&
-                                (gender == null || tournament.getGenderType().equals(gender))
-                );
-    }
-
 
     private PlayerRankingResponseDto getPlayerPointsRanking(UUID playerId, CategoryType category, GenderType gender) {
         Player player = playerRepository.findById(playerId)
@@ -73,47 +65,94 @@ public class PlayerRankingService implements IPlayerRankingService {
 
         List<Tournament> filteredTournaments = playerTournaments.stream()
                 .filter(tournament ->
-                        (category == null || tournament.getCategoryType().equals(category)) &&
-                                (gender == null || tournament.getGenderType().equals(gender))
+                        tournament.getCategoryType().equals(category) &&
+                                tournament.getGenderType().equals(gender)
                 )
                 .toList();
 
-        int totalPoints = 0;
+        int totalPoints = filteredTournaments.stream()
+                .mapToInt(tournament -> {
+                    TournamentStrategy strategy = tournamentStrategyFactory.getStrategy(tournament.getTournamentType());
+                    List<PairStanding> standings = strategy.calculateStandings(tournament);
 
-        for (Tournament tournament : filteredTournaments) {
-            TournamentStrategy strategy = tournamentStrategyFactory.getStrategy(tournament.getTournamentType());
-            List<PairStanding> standings = strategy.calculateStandings(tournament);
+                    return standings.stream()
+                            .filter(standing -> isPlayerInPair(standing, playerId))
+                            .findFirst()
+                            .map(PairStanding::getPoints)
+                            .orElse(0);
+                })
+                .sum();
 
-            Optional<PairStanding> playerPairStanding = standings.stream()
-                    .filter(standing -> isPlayerInPair(standing, playerId))
-                    .findFirst();
+        int tournamentsPlayed = filteredTournaments.size();
 
-            if (playerPairStanding.isPresent()) {
-                totalPoints += playerPairStanding.get().getPoints();
-            }
-        }
-
-        int tournamentsPlayed = getTournamentsPlayedCount(playerId, category, gender);
-
-        return PlayerRankingResponseDto.builder()
-                .id(playerId)
-                .name(player.getName())
-                .lastName(player.getLastName())
-                .genderType(player.getGenderType())
-                .totalPoints(totalPoints)
-                .tournamentsPlayed(tournamentsPlayed)
-                .build();
+        return new PlayerRankingResponseDto(
+                playerId,
+                player.getName(),
+                player.getLastName(),
+                player.getGenderType(),
+                0,
+                totalPoints,
+                tournamentsPlayed
+        );
     }
 
-    private int getTournamentsPlayedCount(UUID playerId, CategoryType category, GenderType gender) {
-        List<Tournament> playerTournaments = tournamentRepository.findTournamentsByPlayerId(playerId);
+    private List<PlayerRankingResponseDto> assignPositions(List<PlayerRankingResponseDto> rankings) {
+        if (rankings.isEmpty()) {
+            return rankings;
+        }
 
-        return (int) playerTournaments.stream()
-                .filter(tournament ->
-                        (category == null || tournament.getCategoryType().equals(category)) &&
-                                (gender == null || tournament.getGenderType().equals(gender))
-                )
-                .count();
+        int currentPosition = 1;
+        int previousPoints = -1;
+        List<PlayerRankingResponseDto> result = new ArrayList<>();
+
+        for (int i = 0; i < rankings.size(); i++) {
+            PlayerRankingResponseDto ranking = rankings.get(i);
+
+            if (i == 0 || ranking.totalPoints() != previousPoints) {
+                currentPosition = i + 1;
+            }
+
+            PlayerRankingResponseDto withPosition = new PlayerRankingResponseDto(
+                    ranking.id(),
+                    ranking.name(),
+                    ranking.lastName(),
+                    ranking.genderType(),
+                    currentPosition,
+                    ranking.totalPoints(),
+                    ranking.tournamentsPlayed()
+            );
+
+            result.add(withPosition);
+            previousPoints = ranking.totalPoints();
+        }
+
+        return result;
+    }
+
+    private List<PlayerRankingResponseDto> assignPositionsForPagination(
+            List<PlayerRankingResponseDto> pageRankings,
+            CategoryType category,
+            GenderType gender) {
+
+        List<PlayerRankingResponseDto> allRankings = getPlayerRankings(category, gender);
+
+        Map<UUID, Integer> positionMap = allRankings.stream()
+                .collect(Collectors.toMap(
+                        PlayerRankingResponseDto::id,
+                        PlayerRankingResponseDto::position
+                ));
+
+        return pageRankings.stream()
+                .map(ranking -> new PlayerRankingResponseDto(
+                        ranking.id(),
+                        ranking.name(),
+                        ranking.lastName(),
+                        ranking.genderType(),
+                        positionMap.get(ranking.id()),
+                        ranking.totalPoints(),
+                        ranking.tournamentsPlayed()
+                ))
+                .toList();
     }
 
     private boolean isPlayerInPair(PairStanding standing, UUID playerId) {
