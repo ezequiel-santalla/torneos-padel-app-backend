@@ -3,6 +3,7 @@ package com.eze_dev.torneos.service.implementations;
 import com.eze_dev.torneos.dto.request.update.PlayerUpdateDto;
 import com.eze_dev.torneos.dto.response.PaginatedResponseDto;
 import com.eze_dev.torneos.dto.response.PlayerResponseDto;
+import com.eze_dev.torneos.dto.response.PlayerSummaryResponseDto;
 import com.eze_dev.torneos.mapper.PlayerMapper;
 import com.eze_dev.torneos.model.Player;
 import com.eze_dev.torneos.repository.PlayerRepository;
@@ -56,6 +57,18 @@ public class PlayerService implements IPlayerService {
         List<PlayerResponseDto> players = playersPage.getContent()
                 .stream()
                 .map(playerMapper::toDto)
+                .toList();
+
+        return new PaginatedResponseDto<>(players, playersPage);
+    }
+
+    @Override
+    public PaginatedResponseDto<PlayerSummaryResponseDto> getAllSummarizedPaginated(Pageable pageable) {
+        Page<Player> playersPage = playerRepository.findAll(pageable);
+
+        List<PlayerSummaryResponseDto> players = playersPage.getContent()
+                .stream()
+                .map(playerMapper::toSummaryDto)
                 .toList();
 
         return new PaginatedResponseDto<>(players, playersPage);

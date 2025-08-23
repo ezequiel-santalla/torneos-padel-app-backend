@@ -3,6 +3,7 @@ package com.eze_dev.torneos.controller;
 import com.eze_dev.torneos.dto.request.update.PlayerUpdateDto;
 import com.eze_dev.torneos.dto.response.PaginatedResponseDto;
 import com.eze_dev.torneos.dto.response.PlayerResponseDto;
+import com.eze_dev.torneos.dto.response.PlayerSummaryResponseDto;
 import com.eze_dev.torneos.service.interfaces.IPlayerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +23,8 @@ public class PlayerController {
     private final IPlayerService playerService;
 
     @GetMapping
-    public ResponseEntity<PaginatedResponseDto<PlayerResponseDto>> getAllPlayersPaginated(@PageableDefault Pageable pageable) {
-        return ResponseEntity.ok(playerService.getAllPaginated(pageable));
+    public ResponseEntity<PaginatedResponseDto<PlayerSummaryResponseDto>> getAllSummarizedPlayersPaginated(@PageableDefault Pageable pageable) {
+        return ResponseEntity.ok(playerService.getAllSummarizedPaginated(pageable));
     }
 
     @GetMapping("/{id}")
